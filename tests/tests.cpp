@@ -1635,6 +1635,31 @@ class HypeTests : public QObject {
         QTest::qWait(300);
         auto list = window->findChild<QQuickItem *>("thumbnails");
         QVERIFY(list);
+        auto findFrame = [](auto &&self, QQuickItem *item, const QString &name) -> QQuickItem * {
+            if (item->objectName() == name) return item;
+            for (auto child : item->childItems())
+                if (auto found = self(self, child, name)) return found;
+            return nullptr;
+        };
+        auto currentFrame = findFrame(findFrame, list, "sidebarSlideFrame0");
+        auto passiveFrame = findFrame(findFrame, list, "sidebarSlideFrame1");
+        auto slideEditor = window->findChild<QQuickItem *>("slideEditor");
+        QVERIFY(currentFrame && passiveFrame && slideEditor);
+        list->forceActiveFocus();
+        QTRY_VERIFY(list->hasActiveFocus());
+        const QColor activeBorder = currentFrame->property("selectionStroke").value<QColor>();
+        QCOMPARE(currentFrame->property("selectionStrokeWidth").toInt(), 3);
+        slideEditor->forceActiveFocus();
+        QTRY_VERIFY(slideEditor->hasActiveFocus());
+        const QColor editingBorder = currentFrame->property("selectionStroke").value<QColor>();
+        QVERIFY(editingBorder != activeBorder);
+        QVERIFY(editingBorder != passiveFrame->property("selectionStroke").value<QColor>());
+        QCOMPARE(currentFrame->property("selectionStrokeWidth").toInt(), 2);
+        QCOMPARE(passiveFrame->property("selectionStrokeWidth").toInt(), 1);
+        QCOMPARE(d.selected(), 0);
+        list->forceActiveFocus();
+        QTRY_VERIFY(list->hasActiveFocus());
+        QCOMPARE(currentFrame->property("selectionStroke").value<QColor>(), activeBorder);
         const double slideStep = list->property("slideStep").toDouble();
         auto a = list->mapToScene(QPointF(100, 50)).toPoint(),
              b = list->mapToScene(QPointF(100, 2 * slideStep + 90)).toPoint();

@@ -507,8 +507,11 @@ ApplicationWindow {
         required property int slide
         required property bool selected
         required property bool hovered
+        property bool selectionActive: true
         property size renderSize: Qt.size(340, 192)
         readonly property bool current: deck.selected === slide
+        readonly property color selectionStroke: selected ? (selectionActive ? win.ui.accent : win.ui.inactiveSelection) : win.ui.border
+        readonly property int selectionStrokeWidth: current && selectionActive ? 3 : selected ? 2 : 1
         color: deck.background; radius: win.rounding
         Image {
             anchors.fill: parent
@@ -524,10 +527,10 @@ ApplicationWindow {
         }
         Rectangle {
             anchors.fill: parent; radius: frame.radius; color: "transparent"
-            border.width: frame.current ? 3 : frame.selected ? 2 : 1
-            border.color: frame.selected ? win.ui.accent : win.ui.border
+            border.width: frame.selectionStrokeWidth
+            border.color: frame.selectionStroke
         }
-        SlideBadge { slide: frame.slide; current: frame.current; hovered: frame.hovered }
+        SlideBadge { slide: frame.slide; current: frame.current; hovered: frame.hovered; active: frame.selectionActive }
     }
     // Names a slide from inside its frame: part of the accent highlight on the
     // current slide, and a quieter tab on whichever slide the pointer is over.
@@ -535,12 +538,13 @@ ApplicationWindow {
         required property int slide
         required property bool current
         required property bool hovered
+        required property bool active
         visible: current || (hovered && win.dragIndex < 0)
         anchors.left: parent.left; anchors.bottom: parent.bottom
         width: badgeLabel.implicitWidth + 12; height: badgeLabel.implicitHeight + 6
-        color: current ? win.ui.accent : win.ui.border
+        color: current ? (active ? win.ui.accent : win.ui.inactiveSelection) : win.ui.border
         topRightRadius: win.softRadius; bottomLeftRadius: win.rounding
-        Label { id: badgeLabel; anchors.centerIn: parent; text: "Slide " + (parent.slide + 1); font.pixelSize: 10; color: parent.current ? win.ui.accentText : win.ui.foreground }
+        Label { id: badgeLabel; anchors.centerIn: parent; text: "Slide " + (parent.slide + 1); font.pixelSize: 10; color: parent.current ? (parent.active ? win.ui.accentText : win.ui.inactiveSelectionText) : win.ui.foreground }
     }
     component AppMenu: Menu {
         id: appMenu
@@ -1072,8 +1076,11 @@ ApplicationWindow {
                         property bool selected: index >= deck.selectionFirst && index <= deck.selectionLast
                         opacity: win.dragIndex >= 0 && selected ? 0.4 : 1
                         SlideFrame {
+                            objectName: "sidebarSlideFrame" + thumbnail.index
                             width: parent.width; height: parent.height
                             slide: thumbnail.index; selected: thumbnail.selected; hovered: thumbnailHover.hovered
+                            // Keep selection visible but quiet while keyboard focus is in the editor.
+                            selectionActive: thumbnails.activeFocus || stage.activeFocus
                         }
                     }
                     Rectangle {
