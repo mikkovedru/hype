@@ -147,7 +147,7 @@ Choose **Export as PDF** or **Export as PowerPoint** from the file menu in the t
 
 Export runs in the background. The top bar shows progress through rendering, video conversion, and packaging under the presentation name, with a **Cancel export** button. You can keep editing; the export uses the presentation as it was when you started. Failed or cancelled exports leave an existing file intact.
 
-PDF keeps text as vectors and sizes embedded images for their visible area at 4K, omitting unused pixels outside spanning crops. Images use lossless compression to preserve fine detail. Photo-heavy PDFs can be larger than JPEG-compressed exports because they avoid additional compression artifacts.
+PDF keeps text as vectors and sizes embedded images for their visible area at 4K, omitting unused pixels outside spanning crops. Images are stored as high-quality JPEG, which keeps exports fast and small; at 4K the compression is not visible.
 
 PowerPoint export automatically converts other video formats, including WebM, to H.264 MP4 with AAC audio, leaving your originals untouched. Compatible MP4s are embedded directly. Use `fit` for videos that aren’t 16:9. Video autoplay and looping may vary between presentation apps; playback in Microsoft PowerPoint has not yet been verified.
 

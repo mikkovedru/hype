@@ -81,7 +81,12 @@ class TestFilePortal : public QDBusVirtualObject {
 class HypeTests : public QObject {
     Q_OBJECT
     QTemporaryDir settingsDirectory;
-    static void write(const QString &path, const QString &content) {
+    // PDF pictures are JPEG, which may move a flat colour by a level or two.
+static bool nearColor(const QColor &got, const QColor &want, int tolerance = 8) {
+    return qAbs(got.red() - want.red()) <= tolerance && qAbs(got.green() - want.green()) <= tolerance &&
+           qAbs(got.blue() - want.blue()) <= tolerance;
+}
+static void write(const QString &path, const QString &content) {
         QFile f(path);
         QVERIFY(f.open(QIODevice::WriteOnly));
         f.write(content.toUtf8());
@@ -2644,7 +2649,7 @@ class HypeTests : public QObject {
         QCOMPARE(pdf.load(tmp.path() + "/talk.pdf"), QPdfDocument::Error::None);
         const auto page = pdf.render(0, QSize(320, 180));
         QVERIFY(page.pixelColor(0, 0).blue() > 245);
-        QCOMPARE(page.pixelColor(160, 90), QColor(Qt::green));
+        QVERIFY(nearColor(page.pixelColor(160, 90), QColor(Qt::green)));
         deck.editSlide("![span loop poster=poster.png](demo.mp4)");
         deck.matchImageBackground(true);
         media = parseMedia(deck.slideSource(), deck.baseDir());
@@ -2856,15 +2861,20 @@ class HypeTests : public QObject {
         QCOMPARE(pdf.pageCount(), 2);
         const auto rendered = pdf.render(0, QSize(3840, 2160));
         QVERIFY(!rendered.isNull());
-        // One-pixel red/blue stripes catch both the old 2560px cap and JPEG loss.
-        for (int x = 100; x < 300; ++x)
-            QCOMPARE(rendered.pixelColor(x, 100), detail.pixelColor(x, 100));
+        // One-pixel red/blue stripes catch the old 2560px cap: every stripe must survive at
+        // 4K. JPEG is allowed to shift each channel by a few levels, not to blur stripes.
+        for (int x = 100; x < 300; ++x) {
+            const QColor got = rendered.pixelColor(x, 100), want = detail.pixelColor(x, 100);
+            QVERIFY2(qAbs(got.red() - want.red()) < 24 && qAbs(got.green() - want.green()) < 24 &&
+                     qAbs(got.blue() - want.blue()) < 24,
+                     qPrintable(QString("x=%1 got %2 want %3").arg(x).arg(got.name(), want.name())));
+        }
         QVERIFY(QFileInfo(tmp.path() + "/two.pdf").size() <
                 QFileInfo(tmp.path() + "/one.pdf").size() + 5000);
         QFile file(tmp.path() + "/two.pdf");
         QVERIFY(file.open(QIODevice::ReadOnly));
         const auto bytes = file.readAll();
-        QVERIFY(!bytes.contains("/DCTDecode"));
+        QVERIFY(bytes.contains("/DCTDecode")); // Pictures are JPEG, at full 4K.
         QVERIFY(bytes.contains("/Width 3840"));
         QVERIFY(bytes.contains("/Height 2160"));
         // A portrait in Span must embed only its visible center, not hidden pixels.
@@ -2885,8 +2895,8 @@ class HypeTests : public QObject {
         QPdfDocument croppedPdf;
         QCOMPARE(croppedPdf.load(tmp.path() + "/crop.pdf"), QPdfDocument::Error::None);
         const auto croppedPage = croppedPdf.render(0, QSize(384, 216));
-        QCOMPARE(croppedPage.pixelColor(190, 1), QColor(Qt::red));
-        QCOMPARE(croppedPage.pixelColor(190, 214), QColor(Qt::red));
+        QVERIFY(nearColor(croppedPage.pixelColor(190, 1), QColor(Qt::red)));
+        QVERIFY(nearColor(croppedPage.pixelColor(190, 214), QColor(Qt::red)));
     }
     void renderAndPdf() {
         QTemporaryDir tmp;
