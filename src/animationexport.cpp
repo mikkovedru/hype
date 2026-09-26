@@ -1,4 +1,5 @@
 #include "animationexport.h"
+#include "pptx.h"
 #include "renderer.h"
 #include <QDir>
 #include <QFile>
@@ -74,7 +75,7 @@ bool exportAnimation(const QString &source, const QString &base, const QVariantM
                              "-c:v",
                              "libx264",
                              "-threads",
-                             "2",
+                             QString::number(encoderThreads()),
                              "-preset",
                              "fast",
                              "-crf",

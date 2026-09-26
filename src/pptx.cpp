@@ -6,6 +6,7 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QImageReader>
+#include <QThread>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -412,6 +413,7 @@ bool readSlide(const QJsonObject &entry, const QDir &base, PowerPointSlide &slid
 }
 } // namespace
 
+int encoderThreads() { return qBound(2, QThread::idealThreadCount() / 2, 16); }
 QString preparePowerPointVideo(const QString &source, const QString &output, QString *error,
                               const std::function<void(double)> &progress) {
     QProcess probe;
@@ -440,7 +442,7 @@ QString preparePowerPointVideo(const QString &source, const QString &output, QSt
     QProcess encoder;
     encoder.start("ffmpeg", {"-v", "error", "-nostdin", "-y", "-i", source,
         "-map", "0:v:0", "-map", "0:a:0?", "-c:v", "libx264", "-preset", "fast", "-crf", "18",
-        "-threads", "2", "-vf", "pad=ceil(iw/2)*2:ceil(ih/2)*2", "-pix_fmt", "yuv420p",
+        "-threads", QString::number(encoderThreads()), "-vf", "pad=ceil(iw/2)*2:ceil(ih/2)*2", "-pix_fmt", "yuv420p",
         "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", "-progress", "pipe:1", output});
     if (!encoder.waitForStarted()) {
         *error = "Cannot start video conversion: " + encoder.errorString();
