@@ -48,6 +48,8 @@ ApplicationWindow {
     }
     property bool syncingEditor: false
     property bool editingSlide: false
+    // Remember intentional focus changes; moving the window may briefly clear activeFocus.
+    property string focusedEditor: ""
     property bool presenting: false
     readonly property bool popupOpen: pasteDialog.visible || compressionDialog.visible ||
         historyDialog.visible || closeDialog.visible || shortcutsOverlay.visible || themes.popup.visible || fonts.popup.visible ||
@@ -62,7 +64,7 @@ ApplicationWindow {
     property int dragScroll: 0
     function togglePresent() {
         presenting = !presenting
-        if (presenting) { win.showFullScreen(); stage.forceActiveFocus() }
+        if (presenting) { win.focusedEditor = ""; win.showFullScreen(); stage.forceActiveFocus() }
         else { player.stop(); win.showNormal() }
     }
     function toggleVideo() {
@@ -161,6 +163,7 @@ ApplicationWindow {
     function openMarkdown() { setMarkdownMode(true) }
     function setMarkdownMode(value) { setMode(value ? "markdown" : "visual") }
     function setMode(name) {
+        focusedEditor = ""
         overview = name === "overview"
         if (!overview) editingMode = name
         markdown = name === "markdown"
@@ -1001,6 +1004,7 @@ ApplicationWindow {
                 anchors.fill: parent; anchors.margins: win.inset; spacing: 10
                 ListView {
                     id: thumbnails; objectName: "thumbnails"; Layout.fillWidth: true; Layout.fillHeight: true; clip: true
+                    onActiveFocusChanged: if (activeFocus) win.focusedEditor = ""
                     model: deck; spacing: 10; currentIndex: deck.selected
                     cacheBuffer: height * 2
                     highlightFollowsCurrentItem: false
@@ -1231,9 +1235,15 @@ ApplicationWindow {
                 SplitView.preferredHeight: 250; SplitView.minimumHeight: 140
                 SplitView.maximumHeight: workspace.height * 0.65
             EditorToolbar { id: slideBar; Layout.fillWidth: true }
+            Rectangle {
+                objectName: "slideEditorFrame"
+                Layout.fillWidth: true; Layout.fillHeight: true
+                color: win.ui.background; radius: win.softRadius
+                readonly property color focusStroke: win.focusedEditor === "slide" && !win.popupOpen ? win.ui.inactiveSelection : win.ui.border
+                border.color: focusStroke; border.width: 1
             ScrollView {
                 id: slideScroll; objectName: "slideScroll"
-                Layout.fillWidth: true; Layout.fillHeight: true; clip: true
+                anchors.fill: parent; anchors.margins: 1; clip: true
                 WheelHandler {
                         acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
                     target: null
@@ -1241,6 +1251,7 @@ ApplicationWindow {
                 }
                 TextArea {
                     id: slideEditor; objectName: "slideEditor"; persistentSelection: true; textFormat: TextEdit.PlainText; color: win.ui.foreground; selectionColor: win.ui.selection; selectedTextColor: win.ui.selectionText; font.family: "JetBrains Mono"; font.pixelSize: 16
+                    onActiveFocusChanged: if (activeFocus) win.focusedEditor = "slide"
                     wrapMode: TextEdit.Wrap; leftPadding: 24; topPadding: 16; placeholderText: "# Your headline"
                     onTextChanged: {
                         if (!win.syncingEditor && activeFocus) {
@@ -1255,15 +1266,22 @@ ApplicationWindow {
                 }
             }
             }
+            }
         }
         ColumnLayout {
             visible: win.markdown && !win.overview && !win.presenting; spacing: 0
             Layout.fillWidth: true; Layout.fillHeight: true
             Layout.margins: win.inset; Layout.leftMargin: 0
         EditorToolbar { id: sourceBar; scope: "source."; textInset: sourceEditor.leftPadding; Layout.fillWidth: true }
+        Rectangle {
+            objectName: "sourceEditorFrame"
+            Layout.fillWidth: true; Layout.fillHeight: true
+            color: win.ui.background; radius: win.softRadius
+            readonly property color focusStroke: win.focusedEditor === "source" && !win.popupOpen ? win.ui.inactiveSelection : win.ui.border
+            border.color: focusStroke; border.width: 1
         ScrollView {
             id: sourceScroll; objectName: "sourceScroll"
-            Layout.fillWidth: true; Layout.fillHeight: true; clip: true
+            anchors.fill: parent; anchors.margins: 1; clip: true
             background: Rectangle { color: win.ui.background }
             Flickable {
                 id: sourceFlick; objectName: "sourceFlick"
@@ -1275,6 +1293,7 @@ ApplicationWindow {
                 }
                 TextArea.flickable: TextArea {
                 id: sourceEditor; objectName: "sourceEditor"
+                onActiveFocusChanged: if (activeFocus) win.focusedEditor = "source"
                 persistentSelection: true
                 textFormat: TextEdit.PlainText
                 color: win.ui.foreground; selectionColor: win.ui.selection; selectedTextColor: win.ui.selectionText
@@ -1285,6 +1304,7 @@ ApplicationWindow {
                 Keys.onPressed: function(event) { win.editorKey(sourceEditor, sourceFlick, event) }
             }
             }
+        }
         }
         }
     }
