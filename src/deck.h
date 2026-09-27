@@ -106,7 +106,8 @@ class Deck : public QAbstractListModel {
     Q_INVOKABLE bool restoreVersion(const QString &name);
     bool exportPdf(const QString &path);
     bool exportPptx(const QString &path);
-    bool renderImages(const QString &directory, int width = 1920, bool convertAnimations = false);
+    // For PowerPoint, animations become videos and opaque slides are stored as JPEG.
+    bool renderImages(const QString &directory, int width = 1920, bool powerPoint = false);
     Q_INVOKABLE void select(int index);
     Q_INVOKABLE void extendSelection(int index);
     Q_INVOKABLE void moveSelection(int direction);

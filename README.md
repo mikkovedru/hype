@@ -143,7 +143,7 @@ Click **Present** or press **Ctrl+Space** (or **F5**) to toggle fullscreen prese
 
 Finished videos hold their last frame. Press Space again to replay from the beginning.
 
-Choose **Export as PDF** or **Export as PowerPoint** from the file menu in the top bar, or press **Ctrl+E** for PDF and **Ctrl+Shift+E** for PowerPoint, to share your presentation. Both exports are built into Hype. PowerPoint renders slides and converted animations at 4K (3840 × 2160). Slides preserve the rendered appearance rather than exposing editable text and shapes; the receiving computer does not need your fonts installed. Videos are embedded, and animated WebP/GIF images are converted to MP4 automatically without changing the original files. PDF captures still slides.
+Choose **Export as PDF** or **Export as PowerPoint** from the file menu in the top bar, or press **Ctrl+E** for PDF and **Ctrl+Shift+E** for PowerPoint, to share your presentation. Both exports are built into Hype. PowerPoint renders slides and converted animations at 4K (3840 × 2160), storing slides as high-quality JPEG like the pictures in a PDF. Slides preserve the rendered appearance rather than exposing editable text and shapes; the receiving computer does not need your fonts installed. Videos are embedded, and animated WebP/GIF images are converted to MP4 automatically without changing the original files. PDF captures still slides.
 
 Export runs in the background. The top bar shows progress through rendering, video conversion, and packaging under the presentation name, with a **Cancel export** button. You can keep editing; the export uses the presentation as it was when you started. Failed or cancelled exports leave an existing file intact.
 

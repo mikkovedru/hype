@@ -2949,6 +2949,16 @@ static void write(const QString &path, const QString &content) {
         QImage image(tmp.path() + "/render/slide-001.png");
         QCOMPARE(image.size(), QSize(1920, 1080));
         QCOMPARE(image.pixelColor(0, 0), d.background());
+        // Rendering for PowerPoint stores opaque slides as JPEG and names them so.
+        QVERIFY(d.renderImages(tmp.path() + "/powerpoint", 1920, true));
+        QVERIFY(!QFile::exists(tmp.path() + "/powerpoint/slide-001.png"));
+        QImageReader jpeg(tmp.path() + "/powerpoint/slide-001.jpg");
+        QCOMPARE(jpeg.format(), QByteArray("jpeg"));
+        QFile manifest(tmp.path() + "/powerpoint/slides.json");
+        QVERIFY(manifest.open(QIODevice::ReadOnly));
+        QCOMPARE(QJsonDocument::fromJson(manifest.readAll())["slides"][0]["image"].toString(), QString("slide-001.jpg"));
+        QVERIFY(nearColor(QImage(tmp.path() + "/powerpoint/slide-001.jpg").pixelColor(0, 0), d.background()));
+        QVERIFY(d.exportPptx(tmp.path() + "/talk.pptx"));
         QVERIFY(d.exportPdf(tmp.path() + "/talk.pdf"));
         QPdfDocument pdf;
         QCOMPARE(pdf.load(tmp.path() + "/talk.pdf"), QPdfDocument::Error::None);
