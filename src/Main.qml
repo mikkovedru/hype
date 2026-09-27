@@ -995,7 +995,7 @@ ApplicationWindow {
             }
         }
         Rectangle {
-            visible: !win.presenting && !win.overview; Layout.preferredWidth: 227; Layout.fillHeight: true; color: win.ui.panel
+            visible: !win.presenting && !win.overview; Layout.preferredWidth: 232; Layout.fillHeight: true; color: win.ui.panel
             ColumnLayout {
                 anchors.fill: parent; anchors.margins: win.inset; spacing: 10
                 ListView {
@@ -1008,7 +1008,7 @@ ApplicationWindow {
                     property int hoveredSlide: -1
                     property int wheelDirection: 0
                     property real wheelRemainder: 0
-                    readonly property real thumbnailHeight: 108
+                    readonly property real thumbnailHeight: 108 // A 192 × 108 thumbnail: the sidebar is exactly 16:9 wide plus its insets.
                     readonly property real slideStep: thumbnailHeight + spacing
                     property real scrollBeforeReset: -1
                     function revealSelection() {
