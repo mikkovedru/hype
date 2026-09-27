@@ -18,7 +18,7 @@ Then open **Hype** from the app launcher, or run `hype` in a terminal.
 
 Open Hype from your app launcher. It reopens your last presentation; use **Ctrl+N** to start a new one, or **Ctrl+O** to choose a Markdown file.
 
-In **Visual** mode, select a slide in the sidebar and write its Markdown below the preview. Changes appear as you type. Drag the divider to give the preview or editor more room. The mode button shows the current mode as a grid, slide, or `#` icon; click it to step through **Overview**, **Visual**, and **Markdown**. **Ctrl+M** flips the overview on and off, returning to the mode you came from, and **Ctrl+.** flips the Markdown source. Markdown mode edits the whole presentation, with the same formatting bar on top.
+In **Visual** mode, select a slide in the sidebar and write its Markdown below the preview. Changes appear as you type. Drag the divider to give the preview or editor more room. Two buttons in the top bar switch modes. The grid button, or **Ctrl+M**, turns the **Overview** on and off, returning to the mode you came from. The button beside it shows a slide in **Visual** mode and `#` in **Markdown** mode; click it, or press **Ctrl+.**, to switch between them. Markdown mode edits the whole presentation, with the same formatting bar on top.
 
 **Overview** mode fills the window with a grid of every slide. Select, rearrange, duplicate, and delete slides there as you would in the sidebar; the up and down arrows move by a row. Double-click a slide or press **Enter** to open it in Visual mode.
 

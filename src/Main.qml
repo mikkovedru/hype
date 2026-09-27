@@ -174,10 +174,6 @@ ApplicationWindow {
     property string editingMode: "visual"
     function toggleOverview() { setMode(overview ? editingMode : "overview") }
     function toggleSource() { setMode(markdown && !overview ? "visual" : "markdown") }
-    function cycleMode(step) {
-        const modes = ["overview", "visual", "markdown"]
-        setMode(modes[(modes.indexOf(mode) + step + modes.length) % modes.length])
-    }
     // Moves the selected slides by whole rows in the overview, one slide elsewhere.
     function moveSlides(delta) {
         if (Math.abs(delta) === 1) deck.moveSelection(delta)
@@ -765,11 +761,18 @@ ApplicationWindow {
                 }
                 ToolTip.visible: hovered; ToolTip.text: "Font: " + deck.fontName
             }
+            // Two switches, like their shortcuts: the overview on or off, and slides or source.
+            ToolbarIconButton {
+                objectName: "overviewButton"; iconName: "overview"
+                ink: win.overview ? win.ui.accent : win.ui.muted
+                description: (win.overview ? "Leave the overview" : "Overview") + " (Ctrl+M)"
+                onClicked: win.toggleOverview()
+            }
             ToolbarIconButton {
                 objectName: "modeButton"
-                iconName: win.mode
-                description: (win.overview ? "Overview · Switch to Visual" : win.markdown ? "Markdown · Switch to Overview" : "Visual · Switch to Markdown") + "  ·  Ctrl+M overview, Ctrl+. source"
-                onClicked: win.cycleMode(1)
+                iconName: win.editingMode
+                description: (win.editingMode === "markdown" ? "Markdown · Switch to Visual" : "Visual · Switch to Markdown") + " (Ctrl+.)"
+                onClicked: win.overview ? win.setMode(win.editingMode === "markdown" ? "visual" : "markdown") : win.toggleSource()
             }
             ToolbarIconButton {
                 objectName: "fileButton"; iconName: "file"; ink: deck.dirty ? win.ui.accent : win.ui.muted

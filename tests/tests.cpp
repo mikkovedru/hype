@@ -1517,6 +1517,25 @@ static void write(const QString &path, const QString &content) {
         QCOMPARE(window->property("mode").toString(), QString("visual"));
         QTest::keyClick(window, Qt::Key_M, Qt::ControlModifier);
         QCOMPARE(window->property("mode").toString(), QString("overview"));
+        // The header's two mode buttons do what their shortcuts do, one click each.
+        auto click = [&](const char *name) {
+            auto button = window->findChild<QQuickItem *>(name);
+            QVERIFY(button);
+            QTest::mouseClick(window, Qt::LeftButton, Qt::NoModifier,
+                              button->mapToScene(QPointF(button->width() / 2, button->height() / 2)).toPoint());
+        };
+        click("overviewButton");
+        QCOMPARE(window->property("mode").toString(), QString("visual"));
+        click("modeButton");
+        QCOMPARE(window->property("mode").toString(), QString("markdown"));
+        click("modeButton");
+        QCOMPARE(window->property("mode").toString(), QString("visual"));
+        click("overviewButton");
+        QCOMPARE(window->property("mode").toString(), QString("overview"));
+        click("modeButton"); // From the overview, straight to the other editor.
+        QCOMPARE(window->property("mode").toString(), QString("markdown"));
+        click("overviewButton");
+        QCOMPARE(window->property("mode").toString(), QString("overview"));
         QTRY_VERIFY(grid->isVisible());
         QVERIFY(!list->isVisible());
         QVERIFY(!window->findChild<QQuickItem *>("editorPane")->isVisible());
