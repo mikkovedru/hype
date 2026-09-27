@@ -1239,15 +1239,21 @@ static void write(const QString &path, const QString &content) {
         QTRY_COMPARE_WITH_TIMEOUT(player->mediaStatus(), QMediaPlayer::EndOfMedia, 10000);
         QCOMPARE(player->playbackState(), QMediaPlayer::StoppedState);
         QVERIFY(output->isVisible());
-        auto held = output->grabToImage();
-        QVERIFY(held);
-        QTRY_VERIFY(!held->image().isNull());
-        auto heldColor = held->image().pixelColor(held->image().width() / 2, held->image().height() / 2);
-        QVERIFY2(heldColor.red() > 240, qPrintable(heldColor.name()));
-        QTest::qWait(200);
-        held = output->grabToImage();
-        QTRY_VERIFY(!held->image().isNull());
-        QVERIFY(held->image().pixelColor(held->image().width() / 2, held->image().height() / 2).red() > 240);
+        // Reading the held frame back needs a real display: the offscreen platform shows the
+        // video's texture but hands back black. Everything after this runs in both.
+        if (QGuiApplication::platformName() != "offscreen") {
+            auto heldColor = [&]() -> QColor {
+                auto held = output->grabToImage();
+                if (!held || !QTest::qWaitFor([&] { return !held->image().isNull(); }))
+                    return {};
+                return held->image().pixelColor(held->image().width() / 2, held->image().height() / 2);
+            };
+            QVERIFY2(heldColor().red() > 240, qPrintable(heldColor().name()));
+            QTest::qWait(200);
+            QVERIFY2(heldColor().red() > 240, qPrintable(heldColor().name()));
+        } else {
+            qInfo("Held-frame pixels are checked only on a real display.");
+        }
         QTest::keyClick(window, Qt::Key_Space);
         QTRY_COMPARE(player->playbackState(), QMediaPlayer::PlayingState);
         QTRY_VERIFY(frameColor().blue() > 240);
