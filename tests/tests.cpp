@@ -1,3 +1,4 @@
+#include "budget.h"
 #include "apptheme.h"
 #include "deck.h"
 #include "filedialog.h"
@@ -2839,6 +2840,21 @@ static void write(const QString &path, const QString &content) {
         cr.replace("\n", "\r");
         QCOMPARE(render(cr), render(explicitBreaks));
         QCOMPARE(render("`one`\n`two`"), render("`one`\\\n`two`"));
+    }
+    void workSizesToTheMachine() {
+        const qint64 mb = 1 << 20, gb = 1LL << 30;
+        // A 32-core workstation with 20 GB free renders on its cap; a 4-core one on its cores.
+        QCOMPARE(budget::fit(32, 20 * gb, 200 * mb, 16, 0.4, 0, 1), 16);
+        QCOMPARE(budget::fit(4, 20 * gb, 200 * mb, 16, 0.4, 0, 1), 4);
+        // A small machine is held to what its free memory fits, never below the minimum.
+        QCOMPARE(budget::fit(32, 2 * gb, 200 * mb, 16, 0.6, 0, 1), 6);
+        QCOMPARE(budget::fit(32, 512 * mb, 200 * mb, 16, 0.4, 0, 1), 1);
+        // A 4K encoder's fixed cost leaves a 2 GB machine one thread, a big one many.
+        QCOMPARE(budget::fit(32, 2 * gb, 100 * mb, 16, 0.6, 1200 * mb, 1), 1);
+        QCOMPARE(budget::fit(32, 20 * gb, 100 * mb, 16, 0.6, 1200 * mb, 1), 16);
+        // Unknown memory falls back to the core count.
+        QCOMPARE(budget::fit(32, -1, 200 * mb, 16, 0.4, 0, 1), 16);
+        QVERIFY(budget::availableBytes() > 0);
     }
     void pdfPreserves4kDetailAndReusesImages() {
         QTemporaryDir tmp;

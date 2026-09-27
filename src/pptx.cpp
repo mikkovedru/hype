@@ -1,4 +1,5 @@
 #include "pptx.h"
+#include "budget.h"
 #include "renderer.h"
 #include <QBuffer>
 #include <QDataStream>
@@ -413,7 +414,12 @@ bool readSlide(const QJsonObject &entry, const QDir &base, PowerPointSlide &slid
 }
 } // namespace
 
-int encoderThreads() { return qBound(2, QThread::idealThreadCount() / 2, 16); }
+// Measured at 4K: one x264 thread needs 1.2 GB, each further one about 100 MB, and two
+// threads encode twice as fast as one. Use half the cores at most, so the editor that
+// launched this export stays responsive, and only what the free memory holds.
+int encoderThreads() {
+    return qMin(budget::workers(100LL << 20, 16, 0.6, 1200LL << 20), qMax(1, QThread::idealThreadCount() / 2));
+}
 QString preparePowerPointVideo(const QString &source, const QString &output, QString *error,
                               const std::function<void(double)> &progress) {
     QProcess probe;

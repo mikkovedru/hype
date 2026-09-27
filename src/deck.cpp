@@ -1,4 +1,5 @@
 #include "deck.h"
+#include "budget.h"
 #include "animationexport.h"
 #include "filedialog.h"
 #include "images.h"
@@ -34,6 +35,7 @@
 #include <QThreadPool>
 #include <QtConcurrentRun>
 #include <atomic>
+#include <malloc.h>
 #include <cerrno>
 #include <climits>
 #include <csignal>
@@ -1380,7 +1382,15 @@ bool Deck::renderImages(const QString &directory, int width, bool convertAnimati
     // cores, while this thread converts media and reports progress in slide order.
     // Each worker holds a full-size frame, so a few suffice.
     QThreadPool stills;
-    stills.setMaxThreadCount(qBound(1, QThread::idealThreadCount(), 8));
+    // Each worker holds a 4K canvas, its opaque copy and the decoded source: about 200 MB.
+    // A 4K video encode needs well over a gigabyte of its own. With room for both, convert
+    // media while the slides render; on a small machine, render first and convert after,
+    // so the two peaks never add up.
+    bool converts = false;
+    for (int i = 0; convertAnimations && !converts && i < count(); ++i)
+        converts = !parseMedia(slide(i), baseDir()).path.isEmpty();
+    const bool overlap = !converts || budget::availableBytes() < 0 || budget::availableBytes() > (6LL << 30);
+    stills.setMaxThreadCount(budget::workers(200LL << 20, 16, overlap ? 0.4 : 0.6));
     std::atomic_bool stopped = false;
     const auto stop = qScopeGuard([&] {
         stopped = true;
@@ -1402,6 +1412,15 @@ bool Deck::renderImages(const QString &directory, int width, bool convertAnimati
             p.end();
             return {opaque(image) ? image.convertToFormat(QImage::Format_RGB32).save(path) : image.save(path), warning};
         });
+    if (!overlap) {
+        const double portion = 0.8;
+        while (!stills.waitForDone(100)) {
+            const auto done = std::count_if(rendered.cbegin(), rendered.cend(), [](const auto &f) { return f.isFinished(); });
+            emit exportAdvanced(portion * done / count(), QString("Exporting slide %1 of %2").arg(qMin<qsizetype>(count(), done + 1)).arg(count()));
+        }
+        // Return the workers' freed canvases to the system before the encoder starts.
+        malloc_trim(0);
+    }
     QJsonArray slides;
     QHash<QString, QString> convertedVideos;
     for (int i = 0; i < count(); ++i) {
@@ -1488,7 +1507,13 @@ bool Deck::renderImages(const QString &directory, int width, bool convertAnimati
     return true;
 }
 bool Deck::exportPptx(const QString &path) {
-    QTemporaryDir temp;
+    // Render beside the destination, not in /tmp: /tmp is usually RAM-backed, and a deck's
+    // 4K slide images and converted videos would otherwise sit in memory until packaged.
+    QTemporaryDir temp(QFileInfo(path).absoluteDir().filePath(".hype-render-XXXXXX"));
+    if (!temp.isValid()) {
+        setStatus("Could not prepare the export: " + temp.errorString());
+        return false;
+    }
     if (!renderImages(temp.path(), 3840, true))
         return false;
     QString error;

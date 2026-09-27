@@ -78,6 +78,10 @@ bool exportAnimation(const QString &source, const QString &base, const QVariantM
                              QString::number(encoderThreads()),
                              "-preset",
                              "fast",
+                             // x264 buffers this many 4K frames to plan bitrate; the default of
+                             // 30 costs over a gigabyte for little gain on a short loop.
+                             "-rc-lookahead",
+                             "10",
                              "-crf",
                              "18",
                              "-pix_fmt",

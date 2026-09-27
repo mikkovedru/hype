@@ -1,4 +1,5 @@
 #include "renderer.h"
+#include "budget.h"
 #include "images.h"
 #include "syntax.h"
 #include <QAbstractTextDocumentLayout>
@@ -756,7 +757,11 @@ static QImage renderedSlide(const QString &id, QSize *size, const QSize &request
                id.endsWith("/background"));
     p.end();
     // Room for the slides around the selection at full size, or a whole deck of thumbnails.
-    renders.put(key, image, stageSized(dimensions) ? 14 : 400);
+    // Full-size frames reach 33 MB at 2x, so keep as many as a twentieth of free memory holds.
+    int frames = 14;
+    if (const qint64 free = budget::availableBytes(); free > 0)
+        frames = int(qBound(qint64(4), free / 20 / qMax(qint64(1), qint64(image.sizeInBytes())), qint64(14)));
+    renders.put(key, image, stageSized(dimensions) ? frames : 400);
     if (size)
         *size = image.size();
     return image;
@@ -783,10 +788,11 @@ class SlideResponse : public QQuickImageResponse {
 }
 
 Thumbnails::Thumbnails(Deck *deck) {
-    // Full-size renders are the slow ones; give the stage and its prefetches most of the cores.
+    // Full-size renders are the slow ones; give the stage and its prefetches most of the cores,
+    // as far as memory allows: each full-size render holds about 100 MB while it works.
     const int cores = QThread::idealThreadCount();
     m_thumbnails.setMaxThreadCount(qBound(2, cores / 4, 4));
-    m_previews.setMaxThreadCount(qBound(2, cores / 2, 6));
+    m_previews.setMaxThreadCount(qMin(qBound(2, cores / 2, 6), budget::workers(100LL << 20, 6, 0.2, 0, 2)));
     m_cached.setMaxThreadCount(1);
     m_videos.setMaxThreadCount(2);
     auto timer = new QTimer(this);
