@@ -2,7 +2,7 @@
 
 Simple presentations, written in Markdown. Big headlines, images, video, and code—with a visual editor to put everything in order.
 
-Hype is a native app for Omarchy. Your presentation is a Markdown file with its media alongside it. Choose an installed Omarchy theme, pick a font, and export to PDF or PowerPoint.
+Hype is a native presentation app for Linux. Your presentation is a Markdown file with its media alongside it. Choose an Omarchy theme, pick a font, and export to PDF or PowerPoint.
 
 ## Install
 
@@ -13,6 +13,26 @@ omarchy pkg add hype
 ```
 
 Then open **Hype** from the app launcher, or run `hype` in a terminal.
+
+### Ubuntu 24.04 and Linux Mint 22.x
+
+Build an `amd64` `.deb` on an Ubuntu 24.04 or Mint 22.x machine with Qt 6.9 or newer installed. The package carries its own Qt libraries, QML modules, plugins, the 22 included themes, and its JetBrains Mono and Noto fonts. It uses distribution packages for system graphics libraries, FFmpeg, GNU source-highlight, and the desktop portal.
+
+Install the build tools and font inputs, and provide a Qt 6.9 or newer development installation (Ubuntu 24.04's default Qt is too old):
+
+```sh
+sudo apt install build-essential python3 dpkg-dev binutils zlib1g-dev libwebp-dev \
+  fonts-jetbrains-mono fonts-noto-core fonts-noto-mono
+```
+
+Then build and install:
+
+```sh
+HYPE_QMAKE=/path/to/Qt/6.9.3/gcc_64/bin/qmake6 ./bin/build-deb
+sudo apt install ./build/deb/hype_0.4.2-1_amd64.deb
+```
+
+The builder also finds a Qt installation under `build/qt/` automatically. It checks for the required font files and includes their license notices. To use fonts unpacked somewhere other than `/usr`, set `HYPE_FONT_ROOT` to the root of that extracted package tree. The `.deb` installs Hype under `/opt/hype`, adds the `hype` command and desktop launcher, and does not replace the system Qt installation.
 
 ## Make a presentation
 
@@ -131,7 +151,9 @@ Each slide supports one image or video. Copy the whole presentation folder when 
 
 ## Choose your look
 
-The palette and font icons in the toolbar choose an installed Omarchy theme and a presentation font. Hover to see the current choices. Theme colors apply to text, code, and slide backgrounds; your images keep their original colors. Code stays monospaced. Hype’s interface follows your current desktop theme independently and updates when you change it.
+The palette and font icons in the toolbar choose an Omarchy theme and a presentation font. Hype includes the 22 stock Omarchy color palettes, so the theme picker also works on Mint and other Linux desktops without Omarchy installed. Hover to see the current choices. Theme colors apply to text, code, and slide backgrounds; your images keep their original colors. Code stays monospaced. Without Omarchy, the selected presentation theme also colors the whole editor. On Omarchy, Hype’s interface follows your current desktop theme independently and updates when you change it.
+
+Installed theme files with the same name take precedence over Hype’s included palette. You can also list available palettes with `hype themes`.
 
 The header shows the presentation's name with your position in it, such as “Slide 4 of 45”; saving and exporting report their progress on that line. The file icon beside it holds New, Open, Save, Export, and Version history, and is highlighted when you have unsaved changes.
 
@@ -214,5 +236,7 @@ To build Hype yourself, install a C++17 compiler, make, Qt 6.9 or newer, FFmpeg,
 ./bin/build
 ./build/hype open examples/welcome.md
 ```
+
+`bin/build` uses a Qt toolchain under `build/qt/` when present, then falls back to `qmake6` on your PATH. It checks for Qt 6.9 or newer before compiling. Set `HYPE_QMAKE=/path/to/qmake6` to select a different toolchain.
 
 For a launcher entry that rebuilds this checkout when opened, run `./bin/install-dev` and choose **Hype (Development)**.

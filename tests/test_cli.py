@@ -52,6 +52,28 @@ class CliTests(unittest.TestCase):
         self.assertIn('already exists', self.hype('new', self.deck, code=1).stderr)
         self.assertIn('paper', self.hype('new', self.root / 'other.md', '--theme', 'nope', code=1).stderr)
 
+    def test_stock_themes_work_without_omarchy_and_installed_palettes_override(self):
+        stock = {'catppuccin', 'catppuccin-latte', 'ethereal', 'everforest', 'flexoki-light',
+                 'gruvbox', 'hackerman', 'kanagawa', 'last-horizon', 'lumon', 'lupine',
+                 'matte-black', 'miasma', 'nord', 'osaka-jade', 'retro-82', 'ristretto',
+                 'rose-pine', 'solitude', 'tokyo-night', 'vantablack', 'white'}
+        installed = self.env['OMARCHY_PATH']
+        self.env['OMARCHY_PATH'] = str(self.root / 'missing-omarchy')
+        listed = json.loads(self.hype('themes', '--json').stdout)['themes']
+        self.assertTrue(stock <= set(listed))
+        nord = self.root / 'nord.md'
+        self.hype('new', nord, '--theme', 'nord')
+        self.assertIn('color_background: "#2e3440"', nord.read_text())
+
+        self.env['OMARCHY_PATH'] = installed
+        self.assertIn('paper', json.loads(self.hype('themes', '--json').stdout)['themes'])
+        override = self.root / 'omarchy/themes/tokyo-night/colors.toml'
+        override.parent.mkdir(parents=True)
+        override.write_text('background = "#010203"\n')
+        local = self.root / 'local.md'
+        self.hype('new', local, '--theme', 'tokyo-night')
+        self.assertIn('color_background: "#010203"', local.read_text())
+
     def test_check_reports_every_problem_with_slide_and_line(self):
         self.write(DECK + '\n---\n\n![](missing.png)\n\n---\n\n![bogus=1](gone.png)\n\n---\n')
         report = json.loads(self.hype('check', self.deck, '--json', code=1).stdout)
@@ -123,7 +145,7 @@ class CliTests(unittest.TestCase):
         self.assertFalse((self.root / 'config/hype/hype.ini').exists())
 
     def test_themes_and_help(self):
-        self.assertEqual(json.loads(self.hype('themes', '--json').stdout)['themes'], ['paper'])
+        self.assertIn('paper', json.loads(self.hype('themes', '--json').stdout)['themes'])
         self.assertIn('hype check', self.hype('help', 'format').stdout)
         self.assertIn('--slide', self.hype('help', 'render').stdout)
         self.assertIn('help format', self.hype('help').stdout)
